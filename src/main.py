@@ -9,12 +9,10 @@ import threading
 import queue    
 import RPi.GPIO as GPIO    
   
-# Konfigurasi GPIO  
 GPIO.setmode(GPIO.BCM)  
 GPIO.setup(23, GPIO.OUT)   
 GPIO.setup(24, GPIO.OUT)   
-  
-# Inisialisasi text-to-speech  
+
 engine = pyttsx3.init()    
 voices = engine.getProperty('voices')    
 for voice in voices:    
@@ -22,15 +20,12 @@ for voice in voices:
         engine.setProperty('voice', voice.id)    
         break    
   
-# Inisialisasi model YOLO  
 model = YOLO('/home/pi/Downloads/best.pt')    
 cap = cv2.VideoCapture(0)   
-  
-# Queue untuk komunikasi antar thread  
+
 speech_queue = queue.Queue()    
 detection_time = {}  
-  
-# Fungsi untuk membaca data GPS  
+
 def read_gps():  
     port = "/dev/ttyAMA0"    
     ser = serial.Serial(port, baudrate=9600, timeout=0.5)    
@@ -42,8 +37,7 @@ def read_gps():
             lng = newmsg.longitude    
             gps = f"Latitude={lat} and Longitude={lng}"    
             print(gps)    
-  
-# Fungsi untuk berbicara  
+
 def speak():  
     while True:    
         text = speech_queue.get()     
@@ -52,8 +46,7 @@ def speak():
         engine.say(text)    
         engine.runAndWait()    
         print(f"Suara sudah keluar: {text}")  
-  
-# Fungsi untuk deteksi objek  
+
 def detect_objects():  
     if not cap.isOpened():    
         print("Error: Could not open webcam.")    
@@ -72,7 +65,6 @@ def detect_objects():
             break    
   
         results = model(frame, conf=0.8)    
-        annotated_frame = results[0].plot()    
         classes = results[0].names    
         detected_classes = results[0].boxes.cls.tolist()    
         confidences = results[0].boxes.conf.tolist()    
@@ -106,9 +98,10 @@ def detect_objects():
                     speech_queue.put(class_name)    
                     del detection_time[class_name]    
   
-        resized_frame = cv2.resize(annotated_frame, (desired_width, desired_height))    
-        cv2.imshow('YOLOv8 Detection', resized_frame)    
-  
+        # Hapus bagian ini untuk tidak menampilkan GUI  
+        # resized_frame = cv2.resize(annotated_frame, (desired_width, desired_height))    
+        # cv2.imshow('YOLOv8 Detection', resized_frame)    
+                    
         if cv2.waitKey(1) & 0xFF == ord('q'):    
             break    
   
@@ -119,11 +112,9 @@ def detect_objects():
     speech_queue.put(None)    
     speech_thread.join()    
     cap.release()    
-    cv2.destroyAllWindows()    
     GPIO.cleanup()    
-  
-# Membuat dan memulai thread untuk GPS dan deteksi objek  
+
 gps_thread = threading.Thread(target=read_gps)    
 gps_thread.start()    
   
-detect_objects()  # Menjalankan fungsi deteksi objek di thread utama  
+detect_objects()
