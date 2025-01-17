@@ -159,3 +159,4 @@ detection_thread.join()
 gps_thread.join()
 speech_queue.put(None)  # Signal TTS thread to stop
 tts_thread.join()
+
